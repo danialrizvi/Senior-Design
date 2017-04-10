@@ -3,6 +3,10 @@
 import cv2
 import time
 import imutils
+import _csv as csv
+import datetime
+import Data_Processing as DP
+import remake_csv as CSV
 #print(cv2.__version__)
 
 
@@ -16,6 +20,29 @@ def withinRange(X1,X2,Y1,Y2):
 
 def CarListLength():
     return CarList.__len__()
+
+def csvRawData(in_list):
+    with open('C:/Users/DRizvi/Desktop/Vehicle Detection/vehicle_detection_haarcascades-master/Video_Data_export.csv', 'ab') as vidprocess:
+        global frame_number
+        global frame_length
+        process = csv.writer(vidprocess, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        write_list = [frame_number, frame_number * frame_length]
+        for k in range(0, len(in_list)):
+            write_list.append(in_list[k])
+        process.writerow(write_list)
+        frame_number += 1
+    vidprocess.close()
+
+def makeList(file):
+    with open(file, 'rb') as input:
+        read = csv.reader(input)
+        output = []
+
+        for row in read:
+            output.append(row)
+
+    input.close()
+    return output
 
 class Car(object):
 
@@ -88,6 +115,9 @@ NumCar = 1
 timeTotal = 0
 FrameNum = 0
 
+frame_number = 0
+frame_length = .200
+
 cascade_src = 'cascade13.xml' #Path to Haar Cascade Model
 video_src = 'dataset/vid1_clip.mp4' #Path to video file
 
@@ -107,7 +137,7 @@ while True:
         elif(missingFrame > 500):
             timePerFrame = timeTotal/FrameNum
             print "Seconds per Frame:" + str(timePerFrame)
-            cv2.destroyAllWindows()
+            #cv2.destroyAllWindows()
             break
 
     #Downsample video and begin processing frame by frame
@@ -198,7 +228,7 @@ while True:
                 carX = carObject.getX()
                 carW = carObject.getW()
                 carY = carObject.getY()
-                cv2.putText(resize, str(carObject.getNum()), (carX + carW, carY - 10), cv2.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 255), 1) 
+                #cv2.putText(resize, str(carObject.getNum()), (carX + carW, carY - 10), cv2.FONT_HERSHEY_DUPLEX, 0.75, (0, 0, 255), 1) 
                     
         
 
@@ -208,8 +238,21 @@ while True:
         time2 = time.time()
         timeTotal = timeTotal + (time2 - time1)
 
-        cv2.waitKey(25)
+        PositionList = []
+        for carObject in CarList:
+            if(carObject.getActive() == True):
+                PositionList.append(carObject.getXc())
+                PositionList.append(carObject.getYc())
+            else:
+                PositionList.append('-')
+                PositionList.append('-')
+            
+        csvRawData(PositionList)
+        
+        #cv2.waitKey(25)
         if cv2.waitKey(33) == 27:
             break
 
+CSV.remakeCSV()
+DP.DataProcessing()
 cv2.destroyAllWindows()
